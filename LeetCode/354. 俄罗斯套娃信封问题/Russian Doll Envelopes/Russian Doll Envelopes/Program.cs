@@ -11,5 +11,9 @@ namespace Russian_Doll_Envelopes
         static void Main(string[] args)
         {
         }
+        static int MaxEnvelopes(int[][] envelopes)
+        {
+
+        }
     }
 }
