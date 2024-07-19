@@ -1,0 +1,85 @@
+using System.Text.RegularExpressions;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace QDS.Editor.Controls
+{
+    public class ExpressionTextBox : TextBox
+    {
+        private readonly List<VariableInfo> _variableIndexes;
+
+        public ExpressionTextBox()
+        {
+            _variableIndexes = [];
+        }
+
+        protected override void OnTextChanged(TextChangedEventArgs e)
+        {
+            base.OnTextChanged(e);
+            UpdateTextFormatting();
+        }
+
+        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+        }
+        private void UpdateTextFormatting()
+        {
+            int originalCaretIndex = this.CaretIndex;
+            string pattern = @"\b\w+\b";
+            Regex regex = new(pattern);
+            string originalText = this.Text;
+            string text = Text;
+            MatchCollection matches = regex.Matches(text);
+
+            for (int i = matches.Count - 1; i >= 0; i--)
+            {
+                Match match = matches[i];
+                string word = match.Value;
+                int index = match.Index;
+
+                char? charBefore = index > 0 ? text[index - 1] : null;
+                char? charAfter = index + word.Length < text.Length ? text[index + word.Length] : null;
+
+                if (charBefore.HasValue && !char.IsWhiteSpace(charBefore.Value))
+                {
+                    text = text.Insert(index, " ");
+                }
+                else if (charBefore.HasValue && char.IsWhiteSpace(charBefore.Value))
+                {
+                    int start = index - 1;
+                    while (start > 0 && char.IsWhiteSpace(text[start - 1]))
+                    {
+                        text = text.Remove(start - 1, 1);
+                        start--;
+                    }
+                }
+
+                if (charAfter.HasValue && !char.IsWhiteSpace(charAfter.Value))
+                {
+                    text = text.Insert(index + word.Length, " ");
+                }
+                else if (charAfter.HasValue && char.IsWhiteSpace(charAfter.Value))
+                {
+                    int end = index + word.Length + 1;
+                    while (end < text.Length && char.IsWhiteSpace(text[end]))
+                    {
+                        text = text.Remove(end, 1);
+                    }
+                }
+                _variableIndexes.Add(new VariableInfo { StartIndex = match.Index, EndIndex = match.Index + match.Length });
+            }
+            Text = text;
+            if (text != originalText)
+            {
+                this.CaretIndex = Math.Min(originalCaretIndex + 1, this.Text.Length);
+            }
+        }
+
+        private struct VariableInfo
+        {
+            internal int EndIndex { get; set; }
+            internal int StartIndex { get; set; }
+        }
+    }
+}
